@@ -68,16 +68,15 @@ listings$count_total = listings$count_summary + listings$count_description + lis
 listings[c("summary", "description", "space", "amenities", "neighborhood_overview",
            "notes", "transit", "host_about")] = NULL
 
-sapply(listings,class)
+#sapply(listings,class)
 
 new_listings = listings
-#new_listings[c("summary","description","space","neighborhood_overview",
-               #"notes","transit","host_about",
-               #"host_response_rate","amenities")] = NULL
+new_listings[c("count_notes","count_description","count_space","count_transit",
+               "count_host","count_neighborhood")] = NULL
 
 sapply(new_listings,class)
 
-#new_listings = read.csv("temp_table.csv", header = TRUE)
+#new_listings = read.csv("listings_cleansed.csv", header = TRUE)
 
 # divide into training set and testing set
 train_ind <- sample(1:nrow(new_listings), 2/3*nrow(new_listings))
@@ -90,3 +89,4 @@ summary(listingsLM)
 #write.csv(new_listings, file = "temp_table.csv",row.names=FALSE)
 
 write.csv(listings, file = "listings_cleansed.csv", row.names = FALSE)
+

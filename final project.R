@@ -12,9 +12,19 @@ listings[c("thumbnail_url", "medium_url", "picture_url", "xl_picture_url",
            "city", "state", "market", "zipcode", "smart_location", "country_code", "country",
            "is_location_exact", "square_feet", "weekly_price", "monthly_price", "maximum_nights",
            "calendar_updated", "has_availability", "calendar_last_scraped", "first_review", "last_review",
-           "requires_license", "juridication_names")] = NULL
+           "requires_license", "juridication_names", "license")] = NULL
 
-sum(is.na(listings$price))
+listings$security_deposit = as.numeric(gsub("[\\$,]", "", listings$security_deposit))
+listings$price = as.numeric(gsub("[\\$,]", "", listings$price))
+listings$cleaning_fee = as.numeric(gsub("[\\$,]", "", listings$cleaning_fee))
+listings$extra_people = as.numeric(gsub("[\\$,]", "", listings$extra_people))
 
+listings$security_deposit[is.na(listings$security_deposit)] = 0
+listings$cleaning_fee[is.na(listings$cleaning_fee)] = 0
 
-#listing_clean = subset(listings, select = c("type", "state", "opensecrets_id"))
+for (i in (36:42)) {
+  listings[, i] = as.integer(listings[, i])
+  #listings[, i][is.na(listings[, i])] = mean(listings[, i], na.rm = TRUE)
+  temp = listings[, i][is.na(listings[, i])]
+}
+

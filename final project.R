@@ -1,8 +1,8 @@
 #setwd("/Users/siyuan/Documents/Spring 2017/Orie 4740 - Data Mining/seattle-airbnb-open-data")
 
-calendar = read.csv("calendar.csv", header = TRUE)
-listings = read.csv("listings.csv", header = TRUE)
-reviews = read.csv("reviews.csv", header = TRUE)
+calendar = read.csv("data/calendar.csv", header = TRUE)
+listings = read.csv("data/listings.csv", header = TRUE)
+reviews = read.csv("data/reviews.csv", header = TRUE)
 
 listings[c("thumbnail_url", "medium_url", "picture_url", "xl_picture_url", 
            "host_url", "host_thumbnail_url", "host_picture_url", "host_neighbourhood", 
@@ -44,3 +44,24 @@ listings$count_description = listings$count_description + sapply(gregexpr("[[:di
 
 listings$count_space = sapply(gregexpr("[[:alpha:]]+", listings$space), function(x) sum(x > 0))
 listings$count_space = listings$count_space + sapply(gregexpr("[[:digit:]]+\\.*[[:digit:]]*", listings$space), function(x) sum(x > 0))
+
+# check types
+sapply(listings,class)
+
+new_listings = listings
+new_listings[c("summary","description","space","neighborhood_overview",
+               "notes","transit","host_about",
+               "host_response_rate","amenities")] = NULL
+sapply(new_listings,class)
+
+new_listings = read.csv("temp_table.csv", header = TRUE)
+
+# divide into training set and testing set
+train_ind <- sample(1:nrow(new_listings), 2/3*nrow(new_listings))
+listings.train <- new_listings[train_ind, ]
+listings.test <- new_listings[-train_ind, ]
+
+listingsLM = lm( formula = price ~ ., data = listings.train )
+summary(listingsLM)
+
+write.csv(new_listings, file = "temp_table.csv",row.names=FALSE)

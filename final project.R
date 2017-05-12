@@ -1,7 +1,7 @@
 #setwd("/Users/siyuan/Documents/Spring 2017/Orie 4740 - Data Mining/seattle-airbnb-open-data")
 
 calendar = read.csv("data/calendar.csv", header = TRUE)
-listings = read.csv("data/listings.csv", header = TRUE)
+listings = read.csv("listings.csv", header = TRUE)
 reviews = read.csv("data/reviews.csv", header = TRUE)
 
 listings[c("thumbnail_url", "medium_url", "picture_url", "xl_picture_url", 
@@ -45,16 +45,39 @@ listings$count_description = listings$count_description + sapply(gregexpr("[[:di
 listings$count_space = sapply(gregexpr("[[:alpha:]]+", listings$space), function(x) sum(x > 0))
 listings$count_space = listings$count_space + sapply(gregexpr("[[:digit:]]+\\.*[[:digit:]]*", listings$space), function(x) sum(x > 0))
 
-# check types
+listings$count_neighborhood = sapply(gregexpr("[[:alpha:]]+", listings$neighborhood_overview), function(x) sum(x > 0))
+listings$count_neighborhood = listings$count_neighborhood + sapply(gregexpr("[[:digit:]]+\\.*[[:digit:]]*", listings$neighborhood_overview), function(x) sum(x > 0))
+
+listings$count_notes = sapply(gregexpr("[[:alpha:]]+", listings$notes), function(x) sum(x > 0))
+listings$count_notes = listings$count_notes + sapply(gregexpr("[[:digit:]]+\\.*[[:digit:]]*", listings$notes), function(x) sum(x > 0))
+
+listings$count_transit = sapply(gregexpr("[[:alpha:]]+", listings$transit), function(x) sum(x > 0))
+listings$count_transit = listings$count_transit + sapply(gregexpr("[[:digit:]]+\\.*[[:digit:]]*", listings$transit), function(x) sum(x > 0))
+
+listings$count_host = sapply(gregexpr("[[:alpha:]]+", listings$host_about), function(x) sum(x > 0))
+listings$count_host = listings$count_host + sapply(gregexpr("[[:digit:]]+\\.*[[:digit:]]*", listings$host_about), function(x) sum(x > 0))
+
+listings$count_amenities = sapply(gregexpr("[^,\\s][^\\,]*[^,\\s]*", listings$amenities), function(x) sum(x > 0))
+listings$count_amenities[which(listings$amenities == "{}")] = 0
+
+listings$count_notes[which(is.na(listings$notes))] = 0
+listings$count_total = listings$count_summary + listings$count_description + listings$count_space +
+  listings$count_neighborhood + listings$count_notes + listings$count_transit + 
+  listings$count_host 
+
+listings[c("summary", "description", "space", "amenities", "neighborhood_overview",
+           "notes", "transit", "host_about")] = NULL
+
 sapply(listings,class)
 
 new_listings = listings
-new_listings[c("summary","description","space","neighborhood_overview",
-               "notes","transit","host_about",
-               "host_response_rate","amenities")] = NULL
+#new_listings[c("summary","description","space","neighborhood_overview",
+               #"notes","transit","host_about",
+               #"host_response_rate","amenities")] = NULL
+
 sapply(new_listings,class)
 
-new_listings = read.csv("temp_table.csv", header = TRUE)
+#new_listings = read.csv("temp_table.csv", header = TRUE)
 
 # divide into training set and testing set
 train_ind <- sample(1:nrow(new_listings), 2/3*nrow(new_listings))
@@ -64,4 +87,6 @@ listings.test <- new_listings[-train_ind, ]
 listingsLM = lm( formula = price ~ ., data = listings.train )
 summary(listingsLM)
 
-write.csv(new_listings, file = "temp_table.csv",row.names=FALSE)
+#write.csv(new_listings, file = "temp_table.csv",row.names=FALSE)
+
+write.csv(listings, file = "listings_cleansed.csv", row.names = FALSE)

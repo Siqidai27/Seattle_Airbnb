@@ -1,7 +1,7 @@
 #setwd("/Users/siyuan/Documents/Spring 2017/Orie 4740 - Data Mining/seattle-airbnb-open-data")
 
 calendar = read.csv("data/calendar.csv", header = TRUE)
-listings = read.csv("listings.csv", header = TRUE)
+listings = read.csv("data/listings.csv", header = TRUE)
 reviews = read.csv("data/reviews.csv", header = TRUE)
 
 listings[c("thumbnail_url", "medium_url", "picture_url", "xl_picture_url", 

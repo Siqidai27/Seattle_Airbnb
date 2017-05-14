@@ -83,7 +83,8 @@ unique (unlist(lapply (listings, function (x) which (is.na (x)))))
 # Construct a new data frame for modeling
 new_listings = listings
 new_listings[c("count_notes","count_description","count_space","count_transit",
-               "count_host","count_neighborhood")] = NULL
+               "count_host","count_neighborhood","host_listings_count"
+               ,"count_summary","count_amenities")] = NULL
 
 sapply(new_listings,class)
 
@@ -92,18 +93,99 @@ sapply(new_listings,class)
 # Construct models with different approach
 # Linear regression model
 # Divide into training set and testing set
-train_ind <- sample(1:nrow(new_listings), 2/3*nrow(new_listings))
-listings.train <- new_listings[train_ind, ]
-listings.test <- new_listings[-train_ind, ]
+data.lm = new_listings
+
+train_ind <- sample(1:nrow(data.lm), 2/3*nrow(data.lm))
+listings.train <- data.lm[train_ind, ]
+listings.test <- data.lm[-train_ind, ]
 
 listingsLM = lm( formula = price ~ ., data = listings.train )
 summary(listingsLM)
 
+#detecting outliers
+#1
+#plot(hatvalues (listingsLM))
+#lev = hat(model.matrix(listingsLM))
+#plot(lev)
+#data.lm[lev >0.9,]
+#cook = cooks.distance(listingsLM)
+#plot(cook,ylab="Cooks distances")
+#points(32,lev[32],col='red')
+#points(1045,lev[1045],col='red')
+#points(2576,lev[2576],col='red')
+#points(3588,lev[3588],col='red')
+#which.max(hatvalues (listingsLM))
+#data.lm <- data.lm[-c(829,1553,2057,3423), ]
+
+
+# Residual plot
+plot(predict(listingsLM), residuals(listingsLM))
+
 
 # Best subset selection
 library(leaps)
-regfit.bwd=regsubsets(price~.,data = listings, nvmax = 43, method = "backward")
-summary(regfit.bwd)$adjr2
+regfit.bwd=regsubsets(price~.,data = data.lm, nvmax = 42, method = "backward")
+reg.summary=summary(regfit.bwd)
+# adjusted R^2
+plot(reg.summary$adjr2, xlab="Number of Variables ",
+     ylab="Adjusted RSq",type="l")
+points(25,reg.summary$adjr2[25], col="red",cex=2,pch=20)
+# RSS
+plot(reg.summary$rss ,xlab="Number of Variables ",ylab="RSS",
+     type="l")
+points(25,reg.summary$rss[25], col="red",cex=2,pch=20)
+# Cp
+plot(reg.summary$cp ,xlab="Number of Variables ",ylab="Cp", type='l')
+points(25,reg.summary$cp[25], col="red",cex=2,pch=20)
+# BIC
+plot(reg.summary$bic ,xlab="Number of Variables ",ylab="BIC",
+     type='l')
+points(25,reg.summary$bic [25],col="red",cex=2,pch=20)
+# Select variables based on BIC
+plot(regfit.bwd,scale="bic")
+
+# Select
+#write.csv(data.lm, file = "data/listings_selected.csv",row.names=FALSE)
+data.selected = read.csv("data/listings_selected.csv", header = TRUE)
+set.seed(2)
+train_i <- sample(1:nrow(data.selected), 2/3*nrow(data.selected))
+listings.train.new <- data.selected[train_i, ]
+listings.test.new <- data.selected[-train_i, ]
+
+listingsLM.new = lm( formula = price ~ ., data = listings.train.new )
+summary(listingsLM.new)
+plot(predict(listingsLM.new), residuals(listingsLM.new))
+regfit.bwd=regsubsets(price~.,data = data.lm, nvmax = 35, method = "backward")
+reg.summary=summary(regfit.bwd)
+plot(reg.summary$bic ,xlab="Number of Variables ",ylab="BIC",
+     type='l')
+plot(regfit.bwd,scale="bic")
+
+# poly, log
+listingsLM.new = lm( formula = price ~ . +poly(guests_included ,3)
+                     +sqrt(cleaning_fee)+ log(bedrooms+1)
+                     +poly(bathrooms,3)+poly(accommodates,5),
+                     data = listings.train.new )
+summary(listingsLM.new)
+plot(predict(listingsLM.new), residuals(listingsLM.new))
+lev = hat(model.matrix(listingsLM.new))
+plot(lev)
+listings.train.new<-listings.train.new[lev <0.8,]
+listingsLM.new = lm( formula = price ~ . +poly(guests_included ,3)
+                     +sqrt(cleaning_fee)+ log(bedrooms+1)
+                     +poly(bathrooms,3)+poly(accommodates,5),
+                     data = listings.train.new )
+summary(listingsLM.new)
+# MSE
+pred <- predict(listingsLM.new,data.selected[-train_i, ],type = 'response')
+attach(data.selected)
+mean((price-predict(listingsLM.new, data.selected))[-train_i]^2)
+# MSE2
+listingsLM.new2 = lm( formula = price ~ .,
+                     data = listings.train.new )
+pred2 <- predict(listingsLM.new2,data.selected[-train_i, ],type = 'response')
+attach(data.selected)
+mean((price-predict(listingsLM.new2, data.selected))[-train_i]^2)
 
 # LASSO
 library(glmnet)

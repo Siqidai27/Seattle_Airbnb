@@ -94,7 +94,7 @@ sapply(new_listings,class)
 # Linear regression model
 # Divide into training set and testing set
 data.lm = new_listings
-
+set.seed(2)
 train_ind <- sample(1:nrow(data.lm), 2/3*nrow(data.lm))
 listings.train <- data.lm[train_ind, ]
 listings.test <- data.lm[-train_ind, ]
@@ -122,11 +122,12 @@ summary(listingsLM)
 plot(predict(listingsLM), residuals(listingsLM))
 
 
-# Best subset selection
+# Backward subset selection
 library(leaps)
-regfit.bwd=regsubsets(price~.,data = data.lm, nvmax = 42, method = "backward")
+regfit.bwd=regsubsets(price~.,data = data.lm, nvmax = 39, method = "backward")
 reg.summary=summary(regfit.bwd)
 # adjusted R^2
+par(mfrow=c(2,2))
 plot(reg.summary$adjr2, xlab="Number of Variables ",
      ylab="Adjusted RSq",type="l")
 points(25,reg.summary$adjr2[25], col="red",cex=2,pch=20)
@@ -142,11 +143,14 @@ plot(reg.summary$bic ,xlab="Number of Variables ",ylab="BIC",
      type='l')
 points(25,reg.summary$bic [25],col="red",cex=2,pch=20)
 # Select variables based on BIC
+par(mar=c(1,1,1,1))
 plot(regfit.bwd,scale="bic")
+plot(regfit.bwd,scale="adjr2")
 
 # Select
-#write.csv(data.lm, file = "data/listings_selected.csv",row.names=FALSE)
-data.selected = read.csv("data/listings_selected.csv", header = TRUE)
+#write.csv(data.lm, file = "listings_selected.csv",row.names=FALSE)
+data.selected = read.csv("listings_selected.csv", header = TRUE)
+# for MSE data.selected = read.csv("data/listings_selected_old.csv", header = TRUE)
 set.seed(2)
 train_i <- sample(1:nrow(data.selected), 2/3*nrow(data.selected))
 listings.train.new <- data.selected[train_i, ]
@@ -155,10 +159,11 @@ listings.test.new <- data.selected[-train_i, ]
 listingsLM.new = lm( formula = price ~ ., data = listings.train.new )
 summary(listingsLM.new)
 plot(predict(listingsLM.new), residuals(listingsLM.new))
-regfit.bwd=regsubsets(price~.,data = data.lm, nvmax = 35, method = "backward")
+regfit.bwd=regsubsets(price~.,data = data.lm, nvmax = 34, method = "backward")
 reg.summary=summary(regfit.bwd)
 plot(reg.summary$bic ,xlab="Number of Variables ",ylab="BIC",
      type='l')
+which.min(reg.summary$bic)
 plot(regfit.bwd,scale="bic")
 
 # poly, log
@@ -170,12 +175,16 @@ summary(listingsLM.new)
 plot(predict(listingsLM.new), residuals(listingsLM.new))
 lev = hat(model.matrix(listingsLM.new))
 plot(lev)
-listings.train.new<-listings.train.new[lev <0.8,]
+listings.train.new<-listings.train.new[lev <0.6,]
 listingsLM.new = lm( formula = price ~ . +poly(guests_included ,3)
                      +sqrt(cleaning_fee)+ log(bedrooms+1)
                      +poly(bathrooms,3)+poly(accommodates,5),
                      data = listings.train.new )
 summary(listingsLM.new)
+# MSE original
+pred <- predict(listingsLM,data.lm[-train_ind, ],type = 'response')
+attach(data.lm)
+mean((price-predict(listingsLM, data.lm))[-train_ind]^2)
 # MSE
 pred <- predict(listingsLM.new,data.selected[-train_i, ],type = 'response')
 attach(data.selected)
